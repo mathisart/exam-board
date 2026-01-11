@@ -1,0 +1,1155 @@
+
+國中考試佈告欄.html
+
+第
+1
+頁
+(
+共
+1
+頁)
+100%
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考試日導師投影系統 (自動儲存版)</title>
+    <style>
+        /* * =========================================
+         * CSS reset 與 基礎設定
+         * =========================================
+         */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: #ffffff;
+            color: #2c3e50;
+            display: grid;
+            /* Grid 佈局：左側考程表 | 右側主畫面 */
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 1fr auto; 
+        }
+
+        /* * =========================================
+         * 左側邊欄
+         * =========================================
+         */
+        .sidebar {
+            grid-row: 1 / -1; 
+            grid-column: 1 / 2;
+            background-color: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+            height: 100%;
+            z-index: 50; 
+            position: relative;
+        }
+
+        .schedule-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 1.5rem;
+            padding-top: 5rem; /* 避開左上角按鈕 */
+        }
+
+        /* 新增：製作者資訊樣式 */
+        .creator-credit {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            padding-left: 2px; /* 稍微對齊 */
+        }
+
+        .schedule-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #dfe6e9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reset-data-btn {
+            font-size: 0.8rem;
+            color: #95a5a6;
+            cursor: pointer;
+            text-decoration: underline;
+            border: none;
+            background: none;
+        }
+        .reset-data-btn:hover { color: #e74c3c; }
+
+        .schedule-list {
+            list-style: none;
+            width: 100%;
+        }
+
+        .schedule-item {
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            background-color: #ffffff;
+            border-radius: 8px;
+            border-left: 5px solid transparent;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            border: 1px solid #f1f1f1;
+        }
+
+        .schedule-item.active {
+            border-left-color: #3498db;
+            background-color: #fff; 
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+            transform: scale(1.02);
+            border-color: #eaf2f8;
+        }
+
+        .schedule-item.past {
+            opacity: 0.5;
+            background-color: #f8f9fa; 
+            box-shadow: none;
+            border-color: transparent;
+        }
+
+        .item-subject {
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 0.2rem;
+            color: #2c3e50;
+        }
+
+        .item-time {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-family: monospace;
+        }
+
+        /* * =========================================
+         * 右側主畫面
+         * =========================================
+         */
+        .main-display {
+            grid-row: 1 / 2;
+            grid-column: 2 / 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 2rem;
+            background-color: #ffffff;
+            height: 100%; 
+            min-height: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #ecf0f1;
+            color: #7f8c8d;
+            z-index: 5;
+        }
+
+        .status-badge.in-exam { background-color: #e74c3c; color: #ffffff; box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3); }
+        .status-badge.self-study { background-color: #3498db; color: #ffffff; box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3); }
+        .status-badge.on-break { background-color: #2ecc71; color: #ffffff; box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3); }
+
+        .clock-display {
+            font-size: 20vh;
+            font-weight: bold;
+            font-family: monospace;
+            color: #2c3e50;
+            margin-bottom: 2vh;
+            line-height: 1;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+        }
+        
+        .hidden-time { display: none; }
+
+        .current-subject {
+            font-size: 8vmin;
+            font-weight: bold;
+            color: #3498db; 
+            margin-bottom: 2vh;
+            text-align: center;
+            line-height: 1.2;
+            display: none; 
+            padding: 0.5rem 2rem;
+            background-color: #f0f8ff; 
+            border-radius: 12px;
+            max-width: 95%;
+        }
+
+        .main-message {
+            font-size: 10vmin;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.2;
+            color: #2c3e50;
+            margin: 1vh 0;
+            white-space: pre-wrap;
+            max-width: 95%;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* 新增：下一節考試專用顯示區 (上方橫列) */
+        .next-exam-message {
+            font-size: 6vmin;
+            font-weight: bold;
+            color: #3498db;
+            margin-top: 2vh;
+            text-align: center;
+            width: 90%;
+            transition: opacity 0.5s ease-in-out;
+            min-height: 1.2em; /* 預留高度避免跳動 */
+        }
+
+        /* 修改：下課行為指令 (下方橫列) */
+        .sub-message {
+            font-size: 4vmin; /* 稍微縮小以區隔層級 */
+            color: #95a5a6;
+            margin-top: 1.5vh;
+            text-align: center;
+            border-top: 2px solid #f0f0f0;
+            padding-top: 2vh;
+            width: 80%;
+            transition: opacity 0.5s ease-in-out;
+            font-weight: 500;
+        }
+
+        /* * =========================================
+         * 下方資訊列 (已加大尺寸，並修正對齊)
+         * =========================================
+         */
+        .status-footer {
+            grid-row: 2 / 3;
+            grid-column: 2 / 3; 
+            background-color: #ffffff;
+            border-top: 4px solid #3498db;
+            padding: 1.5rem 3rem; /* 增加內距 */
+            display: flex;
+            /* 修正：使用 flex-start 讓所有子元素靠上對齊，而非垂直置中 */
+            align-items: flex-start;
+            align-content: flex-start; /* 確保換行後也靠上 */
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+            z-index: 100;
+            height: auto;
+            min-height: 180px; /* 拉高最小高度 */
+            flex-wrap: wrap; /* 允許換行 */
+            gap: 2rem; /* 使用 gap 控制間距 */
+        }
+
+        /* * 強制對齊修正：
+         * 將所有主要區塊的 align-self 設為 flex-start，
+         * 確保它們不會被父容器的預設值拉伸或置中。
+         */
+        .footer-title-block,
+        .footer-metrics,
+        .footer-info-stack {
+            align-self: flex-start;
+        }
+
+        .footer-title-block {
+            background-color: #3498db;
+            color: #ffffff;
+            padding: 1rem 2rem; /* 增加標題區塊大小 */
+            border-radius: 12px;
+            text-align: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+        }
+        .footer-title-block h3 { 
+            font-size: 1.6rem; /* 放大標題字體 */
+            margin: 0; 
+            line-height: 1.2; 
+        }
+
+        .footer-metrics {
+            display: flex;
+            gap: 2rem; /* 增加間距 */
+            border-right: 2px dashed #e0e0e0;
+            padding-right: 2rem;
+            flex-shrink: 0;
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* 修改：改為 flex-start 靠上對齊 */
+            justify-content: flex-start;
+            
+            /* 修改 padding，上方稍微少一點以配合 justify-content: flex-start，下方多一點 */
+            padding: 0 1.5rem 0.8rem 1.5rem; 
+            /* 新增：視覺微調用，讓內容稍微往下移一點點，對齊左側標題 */
+            padding-top: 0.6rem; 
+            
+            border-radius: 12px;
+            min-width: 140px; /* 加寬 */
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1); 
+        }
+
+        .metric-expected { background-color: #e74c3c; color: white; }
+        .metric-actual { background-color: #2ecc71; color: white; }
+        
+        .metric-label { 
+            font-size: 1.1rem; /* 放大標籤 */
+            opacity: 0.9; 
+            font-weight: bold; 
+            margin-bottom: 0.3rem; 
+        }
+        .metric-value { 
+            font-size: 3rem; /* 大幅放大數字 */
+            font-weight: 800; 
+            line-height: 1; 
+        }
+
+        /* 修改：未到座號與特殊考場的合併區塊 - 調整對齊方式 */
+        .footer-info-stack {
+            display: flex;
+            flex-direction: column;
+            /* 修正：內容靠上對齊 */
+            justify-content: flex-start;
+            gap: 1.2rem; /* 上下行間距 */
+            min-width: 250px;
+            
+            margin-left: auto; /* 整個區塊推到最右邊 */
+            align-items: flex-start; /* 區塊內的每一行靠左對齊 */
+            
+            /* 微調：增加一點頂部內距，讓文字視覺上對齊左側按鈕內的文字 */
+            padding-top: 0.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center; /* 行內垂直置中 */
+            font-size: 1.5rem; /* 放大內容文字 */
+            flex-wrap: wrap; /* 允許過長換行 */
+        }
+
+        .detail-label { font-weight: bold; color: #e74c3c; margin-right: 0.5rem; white-space: nowrap; }
+        .detail-content { font-weight: 500; color: #2c3e50; }
+        
+        .special-label { font-weight: bold; color: #3498db; margin-right: 0.5rem; white-space: nowrap; }
+        .special-content { font-weight: 500; color: #2c3e50; }
+
+        .detail-note { 
+            font-size: 1.2rem; /* 放大備註 */
+            color: #555; 
+            background-color: #f1f2f6; 
+            padding: 0.5rem 1rem; 
+            border-radius: 6px; 
+            display: inline-block; 
+            max-width: 100%; 
+            word-break: break-all;
+            margin-left: 1rem; /* 與未到號碼保持距離 */
+        }
+
+        /* * =========================================
+         * 控制面板 (使用 Flexbox 置中)
+         * =========================================
+         */
+        .control-toggle, .fullscreen-toggle {
+            position: fixed;
+            top: 15px; 
+            z-index: 1001;
+            color: white; 
+            border: none;
+            padding: 10px 16px;
+            cursor: pointer;
+            border-radius: 50px; 
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-toggle {
+            left: 15px;
+            background: #3498db; 
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); 
+        }
+        .control-toggle:hover { transform: translateY(-2px); background: #2980b9; }
+
+        .fullscreen-toggle {
+            left: 165px; /* 位於設定按鈕右側 */
+            background: #7f8c8d; 
+            box-shadow: 0 4px 15px rgba(127, 140, 141, 0.4); 
+        }
+        .fullscreen-toggle:hover { transform: translateY(-2px); background: #95a5a6; }
+
+        .control-panel {
+            position: fixed;
+            top: 0; bottom: 0; left: 0; right: 0;
+            margin: auto;
+            width: 90%;
+            max-width: 500px;
+            height: max-content; 
+            max-height: 90vh; 
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 1000;
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+            border-radius: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-panel.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .settings-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+            backdrop-filter: blur(2px);
+        }
+        .settings-backdrop.open { display: block; }
+
+        .control-section { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f0; }
+        .control-section h3 { margin-bottom: 0.8rem; color: #3498db; }
+
+        .form-group { margin-bottom: 0.8rem; }
+        .form-group label { display: block; margin-bottom: 0.3rem; font-size: 0.9rem; color: #7f8c8d; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 1rem; background-color: #fff; }
+
+        input[type="time"]::-webkit-datetime-edit-ampm-field {
+            display: none;
+        }
+
+        .btn { background-color: #3498db; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; }
+        .btn:hover { background-color: #2980b9; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-small { padding: 4px 8px; font-size: 0.8rem; }
+        .btn-block { width: 100%; }
+
+        .msg-list-container { border: 1px solid #eee; border-radius: 4px; padding: 5px; margin-bottom: 10px; background: #fafafa; max-height: 150px; overflow-y: auto; }
+        .msg-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; border-bottom: 1px solid #f0f0f0; font-size: 0.95rem; }
+        .msg-list-item button { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; margin-left: 10px; }
+        .msg-input-row { display: flex; gap: 5px; }
+        .msg-input-row input { flex: 1; }
+
+        .schedule-edit-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .schedule-edit-table th, .schedule-edit-table td { border: 1px solid #ecf0f1; padding: 5px; text-align: left; }
+        .schedule-edit-table th { background-color: #f8f9fa; color: #34495e; }
+
+        /* * =========================================
+         * Custom Modal (替代 alert/confirm)
+         * =========================================
+         */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .modal-message { margin-bottom: 1.5rem; font-size: 1.1rem; color: #2c3e50; font-weight: 500;}
+        .modal-actions { display: flex; justify-content: center; gap: 1rem; }
+        .modal-btn { padding: 0.6rem 1.5rem; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; font-size: 1rem; }
+        .modal-btn.confirm { background: #e74c3c; color: white; }
+        .modal-btn.cancel { background: #95a5a6; color: white; }
+        .modal-btn.ok { background: #3498db; color: white; }
+
+        /* RWD 調整 */
+        @media (max-width: 768px) {
+            body { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+            .sidebar { grid-row: 3 / 4; grid-column: 1 / -1; height: auto; border-right: none; border-top: 1px solid #eee; display: none; /* 手機版預設隱藏考程表 */ }
+            .main-display { grid-row: 2 / 3; grid-column: 1 / -1; }
+            .status-footer { grid-row: 3 / 4; grid-column: 1 / -1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 新增遮罩 -->
+    <div id="settingsBackdrop" class="settings-backdrop"></div>
+
+    <!-- 設定開關 -->
+    <button id="toggleControls" class="control-toggle" title="開啟設定面板">
+        <span>⚙️ 設定面板</span>
+    </button>
+
+    <!-- 全螢幕開關 (Added) -->
+    <button id="toggleFullscreen" class="fullscreen-toggle" title="全螢幕模式">
+        <span>⛶ 全螢幕</span>
+    </button>
+
+    <!-- 設定面板 -->
+    <div id="controlPanel" class="control-panel">
+        <div class="control-section">
+            <h3>1. 顯示文字設定</h3>
+            <div class="form-group">
+                <label>主提示語 (中央大字)</label>
+                <textarea id="inputMainMessage" rows="3" placeholder="例如：
+請將手機關機
+專心作答">請將手機關機</textarea>
+            </div>
+            <div class="form-group">
+                <label>自習提示語 (自習課時顯示)</label>
+                <textarea id="inputSelfStudyMessage" rows="2" placeholder="例如：
+保持安靜
+自習時間">保持安靜
+自習時間</textarea>
+            </div>
+            <div class="form-group">
+                <label>下課提示語 (下課時顯示)</label>
+                <textarea id="inputBreakMessage" rows="2" placeholder="例如：
+下課休息">下課休息</textarea>
+            </div>
+
+            <div class="form-group" style="margin-top: 2rem;">
+                <label>下課行為指令 (下方輪播列表)</label>
+                <div id="subMsgListContainer" class="msg-list-container"></div>
+                <div class="msg-input-row">
+                    <input type="text" id="newSubMsgInput" placeholder="輸入指令按 Enter">
+                    <button class="btn" type="button" onclick="addSubMsg()">新增</button>
+                </div>
+            </div>
+            <button class="btn btn-block" onclick="updateMessages()">更新文字並儲存</button>
+        </div>
+
+        <div class="control-section">
+            <h3>2. 出缺席狀況</h3>
+            <div class="form-group">
+                <label>教室應到人數</label>
+                <input type="number" id="inputExpected" value="30">
+            </div>
+            <div class="form-group">
+                <label>教室實到人數</label>
+                <input type="number" id="inputActual" value="30">
+            </div>
+            <div class="form-group">
+                <label style="color:#2980b9; font-weight:bold;">特殊考場 (地點/座號)</label>
+                <input type="text" id="inputSpecial" placeholder="例如：輔導室 (03)" value="">
+            </div>
+            <div class="form-group">
+                <label style="color:#c0392b; font-weight:bold;">未到座號 (逗號分隔)</label>
+                <input type="text" id="inputAbsent" placeholder="例如：05, 12">
+            </div>
+            <div class="form-group">
+                <label>特殊備註</label>
+                <textarea id="inputNote" rows="2" placeholder="例如：5號病假"></textarea>
+            </div>
+            <button class="btn btn-block" type="button" onclick="updateAttendance()">更新出缺席並儲存</button>
+        </div>
+
+        <div class="control-section">
+            <h3>3. 考程表設定</h3>
+            <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem;">時間格式: HH:MM (24小時制)</p>
+            <div class="form-group" style="display:flex; gap:5px;">
+                <input type="text" id="newSubject" list="subjectOptions" placeholder="科目" style="flex:2">
+                <datalist id="subjectOptions">
+                    <option value="國文">
+                    <option value="英文">
+                    <option value="數學">
+                    <option value="理化">
+                    <option value="生物">
+                    <option value="地球科學">
+                    <option value="地理">
+                    <option value="歷史">
+                    <option value="公民">
+                    <option value="寫作測驗">
+                    <option value="自習">
+                </datalist>
+                <input type="time" id="newStart" style="flex:1">
+                <input type="time" id="newEnd" style="flex:1">
+            </div>
+            <button class="btn btn-block" type="button" onclick="addScheduleItem()" style="margin-bottom:1rem;">新增考科</button>
+
+            <table class="schedule-edit-table">
+                <thead><tr><th>科目</th><th>開始</th><th>結束</th><th>操作</th></tr></thead>
+                <tbody id="scheduleEditBody"></tbody>
+            </table>
+        </div>
+        
+        <button class="btn btn-block" onclick="closeSettingsPanel()" style="margin-top: 1rem; background-color: #2ecc71; font-size: 1.1rem; padding: 12px;">完成設定 (儲存並關閉)</button>
+        
+        <div style="margin-top: 1rem; font-size: 0.8rem; color: #999; text-align:center;">
+            資料會自動儲存於瀏覽器中
+        </div>
+    </div>
+
+    <!-- 左側考程表 -->
+    <aside class="sidebar">
+        <div class="schedule-section">
+            <div class="creator-credit">製作者:韋哥科技教室</div>
+            <div class="schedule-title">
+                <span>今日考程表</span>
+                <button class="reset-data-btn" onclick="confirmResetData()">重置資料</button>
+            </div>
+            <ul class="schedule-list" id="displayScheduleList"></ul>
+        </div>
+    </aside>
+
+    <!-- 右側主畫面 -->
+    <main class="main-display">
+        <div id="statusBadge" class="status-badge on-break">非考試狀態</div>
+        <div id="clockDisplay" class="clock-display">00:00</div>
+        <div id="currentSubjectDisplay" class="current-subject"></div>
+        <div id="mainMessageDisplay" class="main-message">請保持安靜</div>
+        
+        <div id="nextExamDisplay" class="next-exam-message"></div>
+        <div id="subMessageDisplay" class="sub-message">準備考試</div>
+    </main>
+
+    <!-- 下方資訊列 -->
+    <footer class="status-footer">
+        <div class="footer-title-block">
+            <h3>班級<br>狀況</h3>
+        </div>
+        
+        <div class="footer-metrics">
+            <div class="metric-item metric-expected">
+                <span class="metric-label">教室應到人數</span>
+                <span class="metric-value" id="dispExpected">30</span>
+            </div>
+            <div class="metric-item metric-actual">
+                <span class="metric-label">教室實到人數</span>
+                <span class="metric-value" id="dispActual">30</span>
+            </div>
+        </div>
+
+        <!-- 修正：將 未到座號 與 特殊考場 合併為垂直排列區塊 -->
+        <div class="footer-info-stack">
+            <div class="info-row">
+                <span class="detail-label">未到座號：</span>
+                <span class="detail-content" id="dispAbsent">無</span>
+                <span class="detail-note" id="dispNote"></span>
+            </div>
+            <div class="info-row">
+                <span class="special-label">特殊考場：</span>
+                <span class="special-content" id="dispSpecial">無</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 自定義 Modal -->
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalMessage" class="modal-message">訊息</div>
+            <div class="modal-actions" id="modalActions"></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * =========================================
+         * 資料與狀態
+         * =========================================
+         */
+        const STORAGE_KEY = 'exam_proctor_v1';
+        let scheduleData = [];
+        let mainMsgString = '請將手機關機'; 
+        let selfStudyMsgString = '保持安靜\n自習時間'; 
+        let breakMsgString = '下課休息'; 
+        let subMsgList = ['下一節考數學', '準備下一科']; 
+        let attendanceData = { expected: 30, actual: 30, special: '', absent: '', note: '' };
+
+        let msgCycleCounter = 0; 
+        let currentMsgIndex = 0; 
+        let lastStatus = null; 
+
+        // DOM Elements
+        const clockEl = document.getElementById('clockDisplay');
+        const subMsgEl = document.getElementById('subMessageDisplay');
+        const nextExamEl = document.getElementById('nextExamDisplay'); 
+        const statusBadge = document.getElementById('statusBadge');
+        const currentSubjectEl = document.getElementById('currentSubjectDisplay'); 
+        const mainDisplay = document.getElementById('mainMessageDisplay');
+        const modalEl = document.getElementById('customModal');
+        const modalMsgEl = document.getElementById('modalMessage');
+        const modalActionsEl = document.getElementById('modalActions');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(); 
+            renderScheduleList();
+            renderEditTable();
+            renderSubMsgList();
+            applyAttendanceToUI();
+            applyMessagesToUIInputs();
+            setInterval(tick, 1000);
+            tick(); 
+
+            const toggleBtn = document.getElementById('toggleControls');
+            const panel = document.getElementById('controlPanel');
+            const backdrop = document.getElementById('settingsBackdrop');
+            
+            toggleBtn.addEventListener('click', () => {
+                panel.classList.add('open');
+                backdrop.classList.add('open');
+            });
+
+            document.getElementById('newSubMsgInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addSubMsg();
+            });
+            ['newSubject', 'newStart', 'newEnd'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') addScheduleItem();
+                });
+            });
+
+            // Fullscreen Logic
+            const fullScreenBtn = document.getElementById('toggleFullscreen');
+            fullScreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showAlert(`無法啟用全螢幕: ${err.message}`);
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+
+            document.addEventListener('fullscreenchange', () => {
+                if (document.fullscreenElement) {
+                    fullScreenBtn.innerHTML = '<span>✕ 退出全螢幕</span>';
+                } else {
+                    fullScreenBtn.innerHTML = '<span>⛶ 全螢幕</span>';
+                }
+            });
+        });
+
+        function saveData() {
+            const dataToSave = {
+                scheduleData,
+                mainMsgString,
+                selfStudyMsgString,
+                breakMsgString, 
+                subMsgList,
+                attendanceData
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    scheduleData = parsed.scheduleData || [];
+                    mainMsgString = parsed.mainMsgString || '請將手機關機';
+                    selfStudyMsgString = parsed.selfStudyMsgString || '保持安靜\n自習時間';
+                    breakMsgString = parsed.breakMsgString || '下課休息'; 
+                    subMsgList = parsed.subMsgList || ['下一節考數學', '準備下一科'];
+                    if (parsed.attendanceData) attendanceData = parsed.attendanceData;
+                } catch (e) {
+                    console.error("Data load error", e);
+                }
+            }
+        }
+
+        function confirmResetData() {
+            showConfirm("確定要重置所有資料嗎？這將清除目前的考程與設定。", () => {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            });
+        }
+
+        function tick() {
+            const now = new Date();
+            const currentTimeVal = now.getHours() * 60 + now.getMinutes();
+            const timeString = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            
+            clockEl.textContent = timeString;
+
+            // 新增：若無考程資料的防呆處理
+            if (!scheduleData.length) {
+                statusBadge.textContent = "尚未設定考程";
+                statusBadge.className = "status-badge on-break"; // 重置樣式為綠色
+                
+                // 確保時間顯示
+                clockEl.classList.remove('hidden-time');
+                
+                // 隱藏/重置其他介面元素
+                currentSubjectEl.style.display = 'none';
+                nextExamEl.style.display = 'none';
+                subMsgEl.style.display = 'none';
+                mainDisplay.textContent = "請點擊左上角設定考程";
+                
+                return; // 直接結束函式，不執行後續邏輯
+            }
+
+            let activeExamId = null;
+            let activeSubject = ""; 
+            let currentStatus = 'BREAK'; 
+            let nextExam = null; 
+
+            // 1. 判斷目前狀態 (考試中 / 非考試)
+            for (let item of scheduleData) {
+                const startVal = timeToMinutes(item.start);
+                const endVal = timeToMinutes(item.end);
+
+                if (currentTimeVal >= startVal && currentTimeVal < endVal) {
+                    activeExamId = item.id;
+                    activeSubject = item.subject; 
+                    if (item.subject.includes('自習')) {
+                        currentStatus = 'SELF_STUDY';
+                    } else {
+                        currentStatus = 'EXAM';
+                    }
+                    break; 
+                }
+            }
+
+            // 狀態切換時重置輪播
+            if (lastStatus !== currentStatus) {
+                msgCycleCounter = 0;
+                currentMsgIndex = 0;
+                lastStatus = currentStatus;
+            }
+            
+            // 計算是否全部結束
+            let allFinished = false;
+            if (scheduleData.length > 0) {
+                const lastEndTime = Math.max(...scheduleData.map(item => timeToMinutes(item.end)));
+                allFinished = currentTimeVal >= lastEndTime;
+            }
+
+            // 2. 非考試狀態 (下課或自習)，尋找下一節考試
+            if (currentStatus !== 'EXAM') {
+                const sortedSchedule = [...scheduleData].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+                nextExam = sortedSchedule.find(item => timeToMinutes(item.start) > currentTimeVal);
+                
+                // --- A. 更新「下一節考試」資訊列 ---
+                if (nextExam) {
+                    nextExamEl.textContent = `下一節：${nextExam.subject} (${nextExam.start})`;
+                    nextExamEl.style.color = '#3498db'; 
+                    nextExamEl.style.display = 'block';
+                } else if (allFinished) {
+                    // 修正：若考程已結束，主畫面會顯示結束，此處隱藏避免重複
+                    nextExamEl.style.display = 'none'; 
+                } else {
+                    if(scheduleData.length > 0) {
+                         const firstExam = sortedSchedule[0];
+                         nextExamEl.textContent = `第一節：${firstExam.subject} (${firstExam.start})`;
+                         nextExamEl.style.color = '#3498db';
+                    } else {
+                         nextExamEl.textContent = "尚未設定考程";
+                         nextExamEl.style.color = '#95a5a6';
+                    }
+                    nextExamEl.style.display = 'block';
+                }
+
+                // --- B. 更新「行為指令」資訊列 (輪播顯示) ---
+                // 修正：只有在真正的「下課 (BREAK)」狀態且今日考程尚未結束才輪播指令
+                if (currentStatus === 'BREAK' && subMsgList.length > 0 && !allFinished) {
+                    msgCycleCounter++;
+                    if (msgCycleCounter >= 6) { 
+                        msgCycleCounter = 0;
+                        currentMsgIndex++;
+                    }
+                    subMsgEl.textContent = subMsgList[currentMsgIndex % subMsgList.length];
+                    subMsgEl.style.display = 'block'; 
+                } else {
+                    subMsgEl.textContent = "";
+                    subMsgEl.style.display = 'none'; 
+                }
+
+            } else {
+                nextExamEl.style.display = 'none';
+                subMsgEl.style.display = 'none';
+            }
+
+            updateUIState(currentStatus, activeExamId, currentTimeVal, activeSubject, allFinished);
+        }
+
+        function timeToMinutes(timeStr) {
+            if (!timeStr || !timeStr.includes(':')) return NaN;
+            const [h, m] = timeStr.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return NaN;
+            return h * 60 + m;
+        }
+
+        function updateUIState(status, activeId, currentTimeVal, activeSubject, allFinished) {
+            statusBadge.classList.remove('in-exam', 'on-break', 'self-study');
+
+            let subjectName = activeSubject;
+            if (subjectName && (subjectName.includes('：') || subjectName.includes(':'))) {
+                subjectName = subjectName.split(/[:：]/).pop();
+            }
+            if (subjectName) subjectName = subjectName.trim();
+
+            if (status === 'EXAM') {
+                clockEl.classList.add('hidden-time');
+                subMsgEl.style.display = 'none';
+                nextExamEl.style.display = 'none'; 
+                
+                currentSubjectEl.textContent = "目前考科：" + subjectName;
+                currentSubjectEl.style.display = 'block';
+                mainDisplay.textContent = mainMsgString;
+                statusBadge.textContent = "考試進行中";
+                statusBadge.classList.add('in-exam');
+            } else if (status === 'SELF_STUDY') {
+                clockEl.classList.remove('hidden-time');
+                // display 控制已交由 tick() 處理
+                
+                currentSubjectEl.textContent = "目前時段：自習";
+                currentSubjectEl.style.display = 'block';
+                mainDisplay.textContent = selfStudyMsgString;
+                statusBadge.textContent = "自習時間";
+                statusBadge.classList.add('self-study');
+            } else {
+                clockEl.classList.remove('hidden-time');
+                // display 控制已交由 tick() 處理
+                
+                currentSubjectEl.style.display = 'none';
+                
+                // 修正：判斷是否全部考完
+                if (allFinished) {
+                    mainDisplay.textContent = "今日考程已結束";
+                    statusBadge.textContent = "考程結束";
+                } else {
+                    mainDisplay.textContent = breakMsgString; 
+                    statusBadge.textContent = "非考試狀態";
+                }
+                statusBadge.classList.add('on-break');
+            }
+
+            // 優化：改用 dataset.id 精準比對資料，不依賴 index 順序
+            const items = document.querySelectorAll('.schedule-item');
+
+            items.forEach(el => {
+                const id = Number(el.dataset.id);
+                const item = scheduleData.find(i => i.id === id);
+                if (!item) return;
+
+                el.classList.remove('active', 'past');
+
+                const endVal = timeToMinutes(item.end);
+                if (item.id === activeId) {
+                    el.classList.add('active');
+                } else if (currentTimeVal >= endVal) {
+                    el.classList.add('past');
+                }
+            });
+        }
+
+        function renderSubMsgList() {
+            const container = document.getElementById('subMsgListContainer');
+            container.innerHTML = '';
+            subMsgList.forEach((msg, index) => {
+                const div = document.createElement('div');
+                div.className = 'msg-list-item';
+                div.innerHTML = `<span>${msg}</span><button type="button" onclick="deleteSubMsg(${index})">✕</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        function addSubMsg() {
+            const input = document.getElementById('newSubMsgInput');
+            const val = input.value.trim();
+            if (val) {
+                subMsgList.push(val);
+                input.value = '';
+                renderSubMsgList();
+                saveData(); 
+            }
+        }
+
+        function deleteSubMsg(index) {
+            subMsgList.splice(index, 1);
+            renderSubMsgList();
+            saveData(); 
+        }
+
+        function updateMessages(silent = false) {
+            mainMsgString = document.getElementById('inputMainMessage').value;
+            selfStudyMsgString = document.getElementById('inputSelfStudyMessage').value;
+            breakMsgString = document.getElementById('inputBreakMessage').value; 
+            saveData(); 
+            tick(); 
+            if (!silent) showAlert("文字設定已更新！");
+        }
+
+        function applyMessagesToUIInputs() {
+            document.getElementById('inputMainMessage').value = mainMsgString;
+            document.getElementById('inputSelfStudyMessage').value = selfStudyMsgString;
+            document.getElementById('inputBreakMessage').value = breakMsgString;
+        }
+
+        function updateAttendance(silent = false) {
+            attendanceData.expected = Number(document.getElementById('inputExpected').value);
+            attendanceData.actual = Number(document.getElementById('inputActual').value);
+            attendanceData.special = document.getElementById('inputSpecial').value;
+            attendanceData.absent = document.getElementById('inputAbsent').value;
+            attendanceData.note = document.getElementById('inputNote').value;
+            
+            applyAttendanceToUI();
+            saveData(); 
+            if (!silent) showAlert("出缺席資訊已更新！");
+        }
+
+        function applyAttendanceToUI() {
+            document.getElementById('inputExpected').value = attendanceData.expected;
+            document.getElementById('inputActual').value = attendanceData.actual;
+            document.getElementById('inputSpecial').value = attendanceData.special;
+            document.getElementById('inputAbsent').value = attendanceData.absent;
+            document.getElementById('inputNote').value = attendanceData.note;
+
+            document.getElementById('dispExpected').textContent = attendanceData.expected;
+            document.getElementById('dispActual').textContent = attendanceData.actual;
+            document.getElementById('dispSpecial').textContent = attendanceData.special || "無";
+            document.getElementById('dispAbsent').textContent = attendanceData.absent || "無";
+            
+            const noteEl = document.getElementById('dispNote');
+            if(attendanceData.note && attendanceData.note.trim() !== "") {
+                noteEl.textContent = attendanceData.note;
+                noteEl.style.display = "inline-block";
+            } else {
+                noteEl.style.display = "none";
+            }
+        }
+
+        function renderScheduleList() {
+            const listEl = document.getElementById('displayScheduleList');
+            listEl.innerHTML = '';
+            scheduleData.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+            scheduleData.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'schedule-item';
+                li.dataset.id = item.id; // ✅ 關鍵
+                li.innerHTML = `
+                    <span class="item-subject">${item.subject}</span>
+                    <span class="item-time">${item.start} - ${item.end}</span>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function renderEditTable() {
+            const tbody = document.getElementById('scheduleEditBody');
+            tbody.innerHTML = '';
+            scheduleData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.subject}</td>
+                    <td>${item.start}</td>
+                    <td>${item.end}</td>
+                    <td><button class="btn btn-danger btn-small" type="button" onclick="deleteScheduleItem(${index})">刪除</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addScheduleItem() {
+            const subject = document.getElementById('newSubject').value;
+            const start = document.getElementById('newStart').value;
+            const end = document.getElementById('newEnd').value;
+
+            if (!subject || !start || !end) {
+                showAlert('請填寫完整考程資訊');
+                return;
+            }
+            
+            if (timeToMinutes(start) >= timeToMinutes(end)) {
+                showAlert('開始時間必須早於結束時間');
+                return;
+            }
+
+            scheduleData.push({ id: Date.now(), subject, start, end });
+            document.getElementById('newSubject').value = '';
+            document.getElementById('newStart').value = '';
+            document.getElementById('newEnd').value = '';
+            
+            scheduleData.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+            renderScheduleList();
+            renderEditTable();
+            saveData(); 
+            tick();
+        }
+
+        function deleteScheduleItem(index) {
+            showConfirm('確定要刪除這個考程嗎？', () => {
+                scheduleData.splice(index, 1);
+                renderScheduleList();
+                renderEditTable();
+                saveData(); 
+                tick();
+            });
+        }
+
+        function closeSettingsPanel() {
+            updateMessages(true);
+            updateAttendance(true);
+            
+            document.getElementById('controlPanel').classList.remove('open');
+            document.getElementById('settingsBackdrop').classList.remove('open');
+        }
+
+        function showAlert(msg) {
+            modalMsgEl.textContent = msg;
+            modalActionsEl.innerHTML = `<button class="modal-btn ok" onclick="closeModal()">好</button>`;
+            modalEl.style.display = 'flex';
+        }
+
+        function showConfirm(msg, onConfirm) {
+            modalMsgEl.textContent = msg;
+            modalActionsEl.innerHTML = `
+                <button class="modal-btn cancel" onclick="closeModal()">取消</button>
+                <button class="modal-btn confirm" id="confirmYesBtn">確定</button>
+            `;
+            document.getElementById('confirmYesBtn').onclick = () => {
+                onConfirm();
+                closeModal();
+            };
+            modalEl.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modalEl.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
